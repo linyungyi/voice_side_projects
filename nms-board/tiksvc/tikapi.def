@@ -1,0 +1,24 @@
+#******************************************************************************
+#  File - tikapi.def
+#
+#  Description -
+#     Link module definition file for TIK Service API(Unixware).
+#
+#
+# Copyright (c) 1997 NMS Communications Corporation. All rights reserved.
+#******************************************************************************
+
+# LIBRARY     tikapi 
+# DESCRIPTION 'NMS Communications Corp TIK Service API(Unixware)'
+
+# EXPORTS
+#                               API Export
+    tikStartTimer
+    tikStopTimer
+    tikGetChannelInfo
+#                               SPI Export
+    tikSpiStartTimer
+    tikSpiStopTimer
+    tikSpiGetChannelInfo
+#                              [eof]
+# End of File (!!!!! DO NOT REMOVE THIS LINE !!!!)

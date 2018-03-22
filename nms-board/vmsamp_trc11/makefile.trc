@@ -1,0 +1,134 @@
+# Name:    makefile.site
+# Creates: vmsamp
+# Usage:   gmake -f makefile.site
+
+TARGET		= vmsamp
+
+ifeq ($(OS), Windows_NT)
+ ########### Windows #############
+  IPATHS   := -I c:\nms\include
+  LPATHS   := /LIBPATH:c:\nms\lib
+ ifeq ($(MSVC),)
+  MSVC		= T:\MSVC60
+ endif		# END MSVC
+
+ TARGET	   := $(TARGET).exe
+ CC			= cl
+ LD			= link
+ C2			= /nologo /MTd /W3 /Od 
+ DEFLIST	= -DWIN32
+ DNA_DEFS	= -D _WINDOWS -D _MT
+ OS_LDIR	= win32
+ OSP		=
+ SUF	   := .lib
+ OSUF	   := obj
+ LFLAGS		= /NODEFAULTLIB:libc /NODEFAULTLIB:libcd /NODEFAULTLIB:libcmt /DEFAULTLIB:libcmtd
+ LSUF	   := lib
+ LINKTAIL  := /nologo /subsystem:console /out:$(TARGET)
+ LIBPATH	= /LIBPATH:
+ LPATHS2   := 
+ LIBS2	   := ws2_32.lib winmm.lib h324.lib
+ OSP       := w2k
+else
+ ########### UNIX #############
+ IPATHS   := -I/opt/nms/include
+ LPATHS   := -L/opt/nms/lib
+
+ ifeq ($(shell uname), Linux) # Check if Linux
+  UNIXTYPE = LINUX
+  OS_LDIR = linux
+  OSP = linux
+ else 
+  UNIXTYPE = SOLARIS
+  ifeq ($(shell uname -p), i386) # Check if Intel or Sparc
+	SOL		= INTEL
+	OS_LDIR	= isol
+	OSP		= isol
+  else
+	SOL		= SPARC
+	OS_LDIR	= solaris
+	OSP		= ssol
+  endif # END if `uname -p` == i386 
+ endif # Linux
+
+ CC			= g++ 
+ LD			= g++
+ 
+ LIBS2 = -lh324api -lh245stack -lnsl -lpthread -lstdc++
+ ifeq ($(shell uname), Linux) # Check if Linux
+  DEFLIST	= -DUNIX_SVR4 -DUNIX -DLINUX -DUNIXMODE 
+  LIBS2		+= -lc -lrt
+ else
+  DEFLIST	= -DUNIX_SVR4 -DUNIX -DSOLARIS -DUNIXMODE -DSOLARIS_$(SOL)
+ LIBS2		+= -lposix4 -lsocket 
+ endif 
+ DNA_DEFS	= -D _$(UNIXTYPE) -D BOOL_DECLARED
+
+ CFLAGS		= -O3 -w
+ LFLAGS		=  
+ PRE       := -l
+ LPATHS2   += -L/usr/lib -L/usr/local/lib
+ OSUF	   := o
+ LSUF	   := a
+ IPATHS    += -I/usr/local/include/g++-3 -I/usr/local/sparc-sun-solaris2.8/include
+ LINKTAIL  := -o $(TARGET)
+ LIBPATH	= -L
+ LIBPRE	   := lib
+endif # END if Windows or UNIX
+
+OBJS =	megasamp.$(OSUF)  \
+		vm_stat.$(OSUF)    \
+		adiEvent.$(OSUF)    \
+		srv_shutdown.$(OSUF) \
+		srv_commands.$(OSUF) \
+		srv_playrec.$(OSUF) \
+		srv_util.$(OSUF)   \
+		srv_init.$(OSUF)  \
+		command.$(OSUF)  \
+		h245Event.$(OSUF) \
+		init.$(OSUF)     \
+		isdn.$(OSUF)     \
+		nccEvent.$(OSUF) \
+		shutdown.$(OSUF) \
+		utils.$(OSUF)    \
+		event.$(OSUF)    \
+		trcEvent.$(OSUF) \
+		trombone.$(OSUF)
+
+DEFLIST    += -DMULTITHREAD -DMAKEOBJ -D_REENTRANT -DUSE_TRC
+LPATHS     += $(LPATHS2)
+
+LIBS        = $(PRE)cta$(SUF)		$(PRE)mspapi$(SUF)	$(PRE)nccapi$(SUF)		\
+			  $(PRE)adiapi$(SUF)	$(PRE)vceapi$(SUF)	$(PRE)swiapi$(SUF)		\
+			  $(PRE)isdnapi$(SUF)	$(PRE)mmfi$(SUF) $(LIBS2) $(PRE)h245api$(SUF) $(PRE)trcapi$(SUF) 
+
+DNA_DEFS +=                                             -D EXCLUDE_CMH261CODEC\
+			-D _CONSOLE         -D INCLUDE_GSMAMR       -D EXCLUDE_CMH263CODEC\
+			-D NDEBUG           -D PASN_NOPRINTON       -D EXCLUDE_CMMP4VIDCODEC\
+			-D HAVE_STRING_H    -D PMEMORY_CHECK=0      -D EXCLUDE_CMG711CODEC\
+			-D INCLUDE_3G324M   -D PASN_LEANANDMEAN     -D EXCLUDE_CMG7231CODEC\
+			-D INCLUDE_H263     -D MPL_NO_CMRESOURCES   -D EXCLUDE_CMGSMAMRCODEC\
+			-D INCLUDE_H261     -D INCLUDE_CONSOLE_IO   -D INCLUDE_COMPILE_WARNING\
+			-D INCLUDE_G7231    -D INCLUDE_MPEG4VIDEO   -D _USE_H245_ASN_VERSION=6\
+			-D INCLUDE_G711     -D _H245_IN_MAIN_THREAD
+
+%.$(OSUF) : %.cpp command.h init.h mega_global.h gw_types.h srv_def.h srv_types.h
+	$(CC) -c $(CFLAGS) $(C2) $(DEFLIST) $(IPATHS) $(DNA_DEFS) -o $@ $<
+
+$(TARGET) : $(OBJS)
+	$(LD) $(LFLAGS) $(CFLAGS) $(LPATHS) $(LIBS) $(OBJS) $(LINKTAIL)
+
+debug : $(TARGET)
+	mv $(TARGET) ./debug
+
+.PHONY : clean tidy
+
+clean:
+	- rm -f *.$(OSUF)
+	- rm -f $(TARGET)
+
+tidy:
+	- rm -f *.$(OSUF)
+
+# DO NOT DELETE
+

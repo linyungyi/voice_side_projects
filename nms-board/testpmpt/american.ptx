@@ -1,0 +1,453 @@
+;=============================================================================
+; FILE:  AMERICAN.PTX
+;
+; VBX prompt manager rules for American English.
+;
+; The commands in this file comprise all of the rules necessary to parse ASCII
+; text and output a voice message list for the following utterances:
+;
+;   o Any number from 0 to 999,999,999,999,999.999999 (with or w/o commas).
+;      I.e. numbers to 10^15 - 1, with decimal fractions of any length.
+;      If the number is preceeded by "@" then it is spoken as digits.
+;
+;   o Dates in MM/DD, MM/DD/YY or MM/DD/YYYY formats.
+;
+;   o Times in HH:MM or HH:MM:SS  24 hour format (hour is 0 to 23)
+;
+;   o Dollar amounts in $DDDDDD.CC format with or without cents, without
+;       commas, again to 10^15 - 1.
+;
+;   o Months and days of the week matching to 3 letters:
+;       MON, TUE, WED, THU, FRI, SAT, SUN
+;       JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC
+;
+;   o Other english words:
+;       AT, AND
+;
+;   o Any space separated list of the above formats can be output in
+;       succession separated by a brief silence (or whatever is recorded
+;       in message MSGPAUSE).  This version ignores trailing blanks in
+;       the input character string.
+;
+;   o Strings starting with "@" are handled specially.  They are spoken as
+;       individual digits with pauses at spaces or "-" and all other
+;       characters ignored.  This supports speaking phone numbers, social
+;       security numbers and the like.
+;
+;
+; Copyright (c) 1988-2002 NMS Communications Corporation. All rights reserved.
+;=============================================================================
+
+; The following are labels defining the message numbers of the voice segments
+; in the associated prompt message file.
+;   For testing purposes and for text prompting while recording the necessary
+;   voice message segments, each voice message also has a brief ASCII
+;   description in the AMERICAN.PRO profile.  Those text descriptions are used
+;   by the test program TESTPMPT in place of real voice messages for testing
+;   purposes.  The AMERICAN.PRO descriptions are also used by the VOXREC
+;   program as text prompts when recording the actual voice messages.
+; These labels appear only within the rules in this .ptx file.  They must
+; correspond to the voice messages in the associated prompt message vox file.
+
+MSGZERO         =   1           ; base message number for 0 - 19
+MSGONE          =   2
+MSGTWO          =   3
+                                ;3 - 11
+MSGTWELVE       =   13          ; used to say TWELVE in time routine
+                                ;13 - 18
+MSGNINETEEN     =   20          ;19  Used for saying year
+MSGTWENTY       =   21          ; base message number for 20,30 .. 90
+MSGTHIRTY       =   22
+                                ;40 - 90
+MSGHUNDRED      =   29          ; message number for 100
+MSGTHOUSAND     =   30          ; message number to say THOUSAND
+MSGMILLION      =   31          ; message number to say MILLION
+MSGBILLION      =   32          ; message number to say BILLION
+MSGTRILLION     =   33          ; message number to say TRILLION
+
+MSGJANUARY      =   34
+MSGFEBRUARY     =   35
+MSGMARCH        =   36
+MSGAPRIL        =   37
+MSGMAY          =   38
+MSGJUNE         =   39
+MSGJULY         =   40
+MSGAUGUST       =   41
+MSGSEPTEMBER    =   42
+MSGOCTOBER      =   43
+MSGNOVEMBER     =   44
+MSGDECEMBER     =   45
+
+MSGSECONDS      =   46          ; plural time unit
+MSGMINUS        =   47          ; message number to say minus
+MSGDOLLAR       =   48
+MSGDOLLARS      =   49
+MSGCENT         =   50
+MSGCENTS        =   51
+MSGAND          =   52
+MSGFIRST        =   53
+MSGSECOND       =   54          ; 2nd and singular time unit
+                                ; 3rd - 19th
+MSG20TH         =   72
+MSG30TH         =   73
+MSGPAUSE        =   74
+MSGOCLOCK       =   75
+MSG_AM          =   76
+MSG_PM          =   77
+MSG_OH          =   78
+MSGPOINT        =   79
+MSGMONDAY       =   80
+MSGTUESDAY      =   81
+MSGWEDNESDAY    =   82
+MSGTHURSDAY     =   83
+MSGFRIDAY       =   84
+MSGSATURDAY     =   85
+MSGSUNDAY       =   86
+MSGAT           =   87
+
+;========================================================================
+;========================================================================
+; The actual rules for the Prompt Manager start here:
+;=============================================================================
+; Fixed entry points for each primary rule.  These entry points are the
+; only ones which must be maintained from one language to another.
+
+            FIND GOTO SMARTDECIDE   ;prompt 0:  Smart decide
+            FIND GOTO SAYNUM        ;prompt 1:  Numbers
+            FIND GOTO SAYDATE       ;prompt 2:  Dates
+            FIND GOTO SAYTIME       ;prompt 3:  Time of day
+            FIND GOTO SAYMONEY      ;prompt 4:  Monetary
+            FIND GOTO SAYOTHER      ;prompt 5:  Letters and digits
+
+                                    ;Your application specific entry points
+                                    ;should go here.
+
+;========================================================================
+;Figure out correct rules based on key characters found in the text string.
+;Multiple entries separated by spaces are allowed.
+
+SMARTDECIDE:
+            FIND FORWARD 1 "@" RIGHT 99 EXCLUDE GOTO SAYOTHER
+            FIND FORWARD 1 " " LEFT 99 EXCLUDE FOUND CALL SMART1
+            FIND FORWARD 1 " " RIGHT 99 INCLUDE FOUND GOTO SMART0
+SMART0:     TEST EQUAL "  "  GOTO SMARTX     ;detect extraneous spaces
+            FIND FORWARD 1 " " RIGHT 99 EXCLUDE FOUND GOTO SMARTDECIDE
+            FIND GOTO SMART2                 ;say last piece.
+                                         ;delete 1st of any two spaces
+SMARTX:     FIND FORWARD 0 RIGHT 99 EXCLUDE FOUND GOTO SMART0
+
+SMART1:     FIND CALL SMART2
+            OUTPUT MSGPAUSE  EXIT
+
+SMART2:     FIND FORWARD 1 "$" FULL FOUND GOTO SAYMONEY
+            FIND FORWARD 1 "/" FULL FOUND GOTO SAYDATE
+            FIND FORWARD 1 ":" FULL FOUND GOTO SAYTIME
+
+            TEST EQUAL NOCASE "SAT" GOTO SAYSAT
+            TEST EQUAL NOCASE "SATUR" GOTO SAYSAT
+            TEST EQUAL NOCASE "SUN" GOTO SAYSUN
+            TEST EQUAL NOCASE "SUNDA" GOTO SAYSUN
+            TEST EQUAL NOCASE "MON" GOTO SAYMON
+            TEST EQUAL NOCASE "TUE" GOTO SAYTUE
+            TEST EQUAL NOCASE "WED" GOTO SAYWED
+            TEST EQUAL NOCASE "THU" GOTO SAYTHU
+            TEST EQUAL NOCASE "FRI" GOTO SAYFRI
+
+            TEST EQUAL NOCASE "JAN" GOTO SAYJAN
+            TEST EQUAL NOCASE "FEB" GOTO SAYFEB
+            TEST EQUAL NOCASE "MAR" GOTO SAYMAR
+            TEST EQUAL NOCASE "APR" GOTO SAYAPR
+            TEST EQUAL NOCASE "MAY" GOTO SAYMAY
+            TEST EQUAL NOCASE "JUN" GOTO SAYJUN
+            TEST EQUAL NOCASE "JUL" GOTO SAYJUL
+            TEST EQUAL NOCASE "AUG" GOTO SAYAUG
+            TEST EQUAL NOCASE "SEP" GOTO SAYSEP
+            TEST EQUAL NOCASE "OCT" GOTO SAYOCT
+            TEST EQUAL NOCASE "NOV" GOTO SAYNOV
+            TEST EQUAL NOCASE "DEC" GOTO SAYDEC
+
+            TEST EQUAL NOCASE "AND" GOTO SAYAND
+            TEST EQUAL NOCASE "AT"  GOTO SAYAT
+
+
+;=============================================================================
+; say any number from 0 to 999,999,999,999,999 with or without commas
+
+SAYNUM:     FIND FORWARD 1 "-" RIGHT 99 EXCLUDE  NOTFOUND GOTO NOMINUS
+            FIND FORWARD 1 "-" RIGHT 99 EXCLUDE
+            OUTPUT MSGMINUS
+
+NOMINUS:    FIND FORWARD 1 "." FULL NOTFOUND GOTO SAYWHOLE
+            FIND FORWARD 1 "." LEFT  99 EXCLUDE FOUND CALL SAYWHOLE
+            FIND FORWARD 1 "." RIGHT 99 EXCLUDE FOUND GOTO SAYDECIMAL ELSE EXIT
+
+SAYWHOLE:
+            ; check for commas.  If not skip comma searches.
+            FIND BACKWARD 1 "," NOTFOUND GOTO NOCOMMAS
+
+            FIND BACKWARD 4 "," LEFT 3 EXCLUDE FOUND CALL DOTRILLION
+            FIND BACKWARD 4 "," RIGHT 99 EXCLUDE
+
+            FIND BACKWARD 3 "," LEFT 3 EXCLUDE FOUND CALL DOBILLION
+            FIND BACKWARD 3 "," RIGHT 99 EXCLUDE
+
+            FIND BACKWARD 2 "," LEFT 3 EXCLUDE FOUND CALL DOMILLION
+            FIND BACKWARD 2 "," RIGHT 99 EXCLUDE
+
+            FIND BACKWARD 1 "," LEFT 3 EXCLUDE FOUND CALL DOTHOUSAND
+            FIND BACKWARD 1 "," RIGHT 99 EXCLUDE FOUND GOTO DOLAST100
+            FIND BACKWARD 1 "," NOTFOUND GOTO NOCOMMAS
+
+
+NOCOMMAS:   TEST NOT " " GOTO NOCOMMA2  ELSE EXIT
+NOCOMMA2:   TEST EQUAL  0  GOTO DOZERO
+
+            FIND BACKWARD 12 LEFT 3   EXCLUDE FOUND CALL DOTRILLION
+            FIND BACKWARD 12 RIGHT 12 INCLUDE
+
+            FIND BACKWARD 9  LEFT 3  EXCLUDE FOUND CALL DOBILLION
+            FIND BACKWARD 9  RIGHT 9 INCLUDE
+
+            FIND BACKWARD 6  LEFT 3  EXCLUDE FOUND CALL DOMILLION
+            FIND BACKWARD 6  RIGHT 6 INCLUDE
+
+            FIND BACKWARD 3  LEFT 3  EXCLUDE FOUND CALL DOTHOUSAND
+            FIND BACKWARD 3  RIGHT 3 INCLUDE FOUND GOTO DOLAST100
+
+
+;say each remaining digit individually
+SAYDECIMAL:
+            OUTPUT MSGPOINT
+SAYDEC1:    FIND FORWARD 0 RIGHT  1 INCLUDE  FOUND CALL SAYDEC2  ELSE EXIT
+            FIND FORWARD 0 RIGHT 99 EXCLUDE  FOUND GOTO SAYDEC1  ELSE EXIT
+
+SAYDEC2:    CONVERT 0 MESSAGE MSGZERO  EXIT
+
+DOTRILLION: TEST GREATER 0  CALL DOHUNDRED  ELSE EXIT
+            OUTPUT MSGTRILLION EXIT
+
+DOBILLION:  TEST GREATER 0  CALL DOHUNDRED  ELSE EXIT
+            OUTPUT MSGBILLION EXIT
+
+DOMILLION:  TEST GREATER 0  CALL DOHUNDRED  ELSE EXIT
+            OUTPUT MSGMILLION EXIT
+
+DOTHOUSAND: TEST GREATER 0  CALL DOHUNDRED  ELSE EXIT
+            OUTPUT MSGTHOUSAND EXIT
+
+DOLAST100:  TEST GREATER 0  GOTO DOHUNDRED  ELSE EXIT  ; 0 handled separately
+
+DOHUNDRED:  TEST GREATER 99  GOTO DO100                ;if >100, say hundreds
+DO2DIG:     TEST GREATER 19  GOTO DOTENS               ;if >19, say tens
+DOONES:     CONVERT 0  MESSAGE MSGZERO  EXIT           ;output single digits
+
+DOTENS:     FIND BACKWARD 2  INCLUDE 1  CALL SAYTENS   ;get tens digit, say it
+            FIND BACKWARD 1  INCLUDE 1                 ;get ones digit
+CHKZERO:    TEST GREATER 0 GOTO DOONES  ELSE EXIT      ;see if > 0, exit if not
+
+SAYTENS:    CONVERT 2  MESSAGE MSGTWENTY    EXIT       ;say twenty,thirty, etc
+
+DO100:      FIND BACKWARD 3 INCLUDE 1 CALL SAY100      ;get 100,s digit, say it
+            FIND BACKWARD 2 INCLUDE RIGHT 2            ;isolate last to digits
+            TEST GREATER 0 GOTO DO2DIG  ELSE EXIT      ;if not 0, say them
+
+SAY100:     CONVERT 0  MESSAGE MSGZERO                 ;say 1-9
+            OUTPUT MSGHUNDRED  EXIT                    ;say HUNDRED
+
+DOZERO:     OUTPUT MSGZERO     EXIT                    ;say zero
+
+;=============================================================================
+; Prompt table commands to say dates in the form "mm/dd"
+
+SAYDATE:
+            ;find the slash character, pass prev 2 chars to month decode
+            FIND FORWARD 1 "/" LEFT 2 EXCLUDE FOUND CALL MONTH
+
+            ;find the slash character, pass following 2 chars to day decode
+            FIND FORWARD 1 "/" RIGHT 2 EXCLUDE FOUND CALL DAY
+
+            ;find a second slash, if found, pass next to digits for year
+            FIND FORWARD 2 "/" RIGHT 4 EXCLUDE FOUND GOTO YEAR  ELSE EXIT
+            ;all done
+
+;emit month, where message # "JANUARY" equals base value 1
+MONTH:
+            TEST GREATER 12 ERROR
+            TEST LESS 1 ERROR
+            CONVERT 1 MESSAGE MSGJANUARY EXIT
+
+;emit day 1-31
+DAY:
+            TEST LESS     1 ERROR
+            TEST LESS    20 GOTO UNDER20
+            TEST EQUAL   20 GOTO EQUAL20
+            TEST LESS    30 GOTO UNDER30
+            TEST EQUAL   30 GOTO EQUAL30
+            TEST GREATER 31 ERROR
+;30 or 31
+            OUTPUT MSGTHIRTY
+            OUTPUT MSGFIRST EXIT
+
+EQUAL20:    OUTPUT MSG20TH EXIT
+EQUAL30:    OUTPUT MSG30TH EXIT
+
+;emit a number between 1 and 19
+UNDER20:    CONVERT 1 MESSAGE MSGFIRST EXIT
+
+;emit number that is between 20 and 29
+UNDER30:    OUTPUT MSGTWENTY
+            CONVERT 21 MESSAGE MSGFIRST EXIT
+
+;emit year from last 2 digits
+YEAR:       TEST LESS 100 GOTO DOCENT
+
+            TEST LESS 2000 GOTO NO2000
+            TEST LESS 2010 GOTO SAY2000
+
+NO2000:     FIND BACKWARD 3 LEFT INCLUDE 2 CALL SAYNUM
+            FIND BACKWARD 1 LEFT INCLUDE 2 GOTO DOYRS
+
+DOCENT:     TEST LESS 70 GOTO DO20
+
+DO19:       OUTPUT MSGNINETEEN
+
+DOYRS:      TEST EQUAL 0 GOTO SAYHND
+            TEST GREATER 9  GOTO SAYNUM
+            OUTPUT MSG_OH
+            FIND 1 GOTO SAYNUM
+
+
+DO20:       OUTPUT MSGTWO MSGTHOUSAND
+            TEST EQUAL 0 EXIT
+            FIND GOTO SAYNUM
+
+SAYHND:     OUTPUT MSGHUNDRED  EXIT
+
+SAY2000:    OUTPUT MSGTWO MSGTHOUSAND
+            FIND BACKWARD 1 INCLUDE 1
+            TEST GREATER 0  GOTO SAYNUM  ELSE EXIT
+
+
+;=============================================================================
+; Prompt table commands to say money in the form $nnn,nnn.nn
+
+SAYMONEY:   FIND 1 "$" RIGHT 99 EXCLUDE
+            FIND FORWARD 1 "." NOTFOUND GOTO SAYDOLLAR
+            TEST LESS NOCASE "0" GOTO SAYJUSTC    ; look for leading "."
+            FIND FORWARD 1 "." LEFT 99 EXCLUDE FOUND CALL SAYDOLLAR
+            FIND FORWARD 1 "." RIGHT 2 EXCLUDE FOUND GOTO SAYCENTS  ELSE EXIT
+
+SAYJUSTC:   FIND FORWARD 1 "." RIGHT 2 EXCLUDE FOUND GOTO SAYC3 ELSE EXIT
+
+SAYCENTS:   TEST GREATER 0 GOTO SAYC1  ELSE EXIT
+SAYC1:      OUTPUT MSGAND
+
+SAYC3:      FIND FORWARD 1 CALL SAYNUM
+            TEST EQUAL 1 GOTO SAYC2
+            OUTPUT MSGCENTS   EXIT
+SAYC2:      OUTPUT MSGCENT    EXIT
+
+SAYDOLLAR:  FIND FORWARD 1 CALL SAYNUM
+            FIND FORWARD 1 "," GOTO SAYDS
+            TEST EQUAL 1 GOTO SAYD1
+SAYDS:      OUTPUT MSGDOLLARS EXIT
+SAYD1:      OUTPUT MSGDOLLAR  EXIT
+
+
+;=============================================================================
+; Prompt table commands to say time in the form: hh:mm
+
+SAYTIME:
+                ; Pass 1st two byte field to hour routine
+            FIND FORWARD 1 ":" LEFT  2 EXCLUDE CALL HOURS
+
+                ; pass 2nd two byte field to minute routine
+            FIND FORWARD 1 ":" RIGHT 2 EXCLUDE CALL MINUTES
+
+            FIND FORWARD 2 ":" RIGHT 2 EXCLUDE CALL SECONDS
+
+                ; from 1st two bytes (hour) determine whether to say AM or PM
+            FIND FORWARD 1 ":" LEFT 2 EXCLUDE
+            TEST GREATER 11 GOTO PM
+            OUTPUT MSG_AM  EXIT
+PM:         OUTPUT MSG_PM  EXIT
+
+HOURS:      TEST GREATER 24 GOTO ERROR
+            TEST GREATER 12 GOTO AFTERNOON
+            TEST EQUAL 0 GOTO MIDNIGHT
+            CONVERT 1  MESSAGE MSGONE  EXIT
+
+AFTERNOON:  CONVERT 13 MESSAGE MSGONE  EXIT
+
+MIDNIGHT:   OUTPUT  MSGTWELVE EXIT
+
+MINUTES:    TEST GREATER 59 GOTO ERROR
+            TEST EQUAL 0 GOTO DOCLK
+            TEST GREATER 9 GOTO DOMIN
+            OUTPUT MSG_OH                           ; say 'oh'
+DOMIN:      FIND 1 GOTO SAYNUM  EXIT
+
+SECONDS:    TEST GREATER 0 GOTO SEC1  ELSE EXIT
+SEC1:       OUTPUT MSGAND
+            FIND 1 CALL SAYNUM
+            TEST EQUAL 1 GOTO SEC2
+            OUTPUT MSGSECONDS  EXIT
+SEC2:       OUTPUT MSGSECOND   EXIT
+
+DOCLK:      OUTPUT MSGOCLOCK  EXIT                  ; say o'clock
+
+SAYJAN:     OUTPUT MSGJANUARY    EXIT
+SAYFEB:     OUTPUT MSGFEBRUARY   EXIT
+SAYMAR:     OUTPUT MSGMARCH      EXIT
+SAYAPR:     OUTPUT MSGAPRIL      EXIT
+SAYMAY:     OUTPUT MSGMAY        EXIT
+SAYJUN:     OUTPUT MSGJUNE       EXIT
+SAYJUL:     OUTPUT MSGJULY       EXIT
+SAYAUG:     OUTPUT MSGAUGUST     EXIT
+SAYSEP:     OUTPUT MSGSEPTEMBER  EXIT
+SAYOCT:     OUTPUT MSGOCTOBER    EXIT
+SAYNOV:     OUTPUT MSGNOVEMBER   EXIT
+SAYDEC:     OUTPUT MSGDECEMBER   EXIT
+
+SAYMON:     OUTPUT MSGMONDAY     EXIT
+SAYTUE:     OUTPUT MSGTUESDAY    EXIT
+SAYWED:     OUTPUT MSGWEDNESDAY  EXIT
+SAYTHU:     OUTPUT MSGTHURSDAY   EXIT
+SAYFRI:     OUTPUT MSGFRIDAY     EXIT
+SAYSAT:     OUTPUT MSGSATURDAY   EXIT
+SAYSUN:     OUTPUT MSGSUNDAY     EXIT
+
+SAYAND:     OUTPUT MSGAND        EXIT
+SAYAT:      OUTPUT MSGAT         EXIT
+
+;=========================================================================
+; Special handling for strings that begin with "@"
+; For the moment, this .PTX file says each digit, pauses when it encounters
+; single blank characters, ignores other characters (except "-" or "," which
+; give a pause), ignores extra blanks when there are multiple blanks and
+; ignores trailing blanks.
+
+SAYOTHER:
+            FIND FORWARD 1 " "  LEFT 99 EXCLUDE FOUND CALL SAYOTHER1
+            FIND FORWARD 1 " " RIGHT 99 INCLUDE FOUND GOTO SAYOTHER0
+SAYOTHER0:  TEST EQUAL "  "   GOTO SAYOTHERX    ;detect extraneous spaces
+            FIND FORWARD 1 " " RIGHT 99 EXCLUDE FOUND GOTO SAYOTHER
+            FIND GOTO CHKSTR                    ;say last piece.
+
+                                                ;delete 1st of any 2 spaces
+SAYOTHERX:  FIND FORWARD 0 RIGHT 99 EXCLUDE FOUND GOTO SAYOTHER0
+
+SAYOTHER1:  FIND CALL CHKSTR
+            OUTPUT MSGPAUSE  EXIT
+
+CHKSTR:     FIND FORWARD 0 RIGHT 1 INCLUDE  FOUND CALL CHKIT    ELSE EXIT
+            FIND FORWARD 0 RIGHT 99 EXCLUDE FOUND GOTO CHKSTR   ELSE EXIT
+
+CHKIT:      TEST EQUAL   ","   GOTO ISPAUSE
+            TEST EQUAL   "-"   GOTO ISPAUSE
+            TEST GREATER "9"   EXIT
+            TEST LESS    "0"   EXIT
+
+ISDIG:      CONVERT 0 MESSAGE MSGZERO     EXIT
+
+ISPAUSE:    OUTPUT MSGPAUSE     EXIT

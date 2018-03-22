@@ -1,0 +1,32 @@
+#------------------------------------------------------------------------------
+# NAME:  tikparm.pf
+#
+# PURPOSE:
+#
+#     This file defines (in ASCII format) the TIK Service parameters that
+#     are accessible via the Natural Access API parameter functions.
+#
+#     This file is used by the pf2src conversion program to generate
+#     the following 'C' source files:
+#       - tikparm.h
+#       - tikparm.c
+#      
+# Copyright (c) 1997 - 2003 NMS Communications.  All rights reserved.
+#------------------------------------------------------------------------------
+
+SvcName TIK                     # TIK Service Name
+SvcId   0x40                    # TIK Service ID (registered with NMS)
+
+
+# Only one category is required by the TIK service; this category has two
+# fields. Therefore the TIK parameters (usable via Natural Access) are:
+#
+#   tik.start.NumTicks
+#   tik.start.Frequency
+
+Category        Start
+  
+  NumTicks,  DWORD, COUNT, 2     # number of tick strings to be received
+  Frequency, DWORD, COUNT, 2        # frequency of tick strings to be received
+  
+End

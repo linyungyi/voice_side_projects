@@ -1,0 +1,5 @@
+ffffffff : Mon Mar 13 14:05:17.012 : APIECHO  : h324Initialize() called. H.245 Stack = 3.9.5.33.19
+ffffffff : Mon Mar 13 14:05:17.013 : MUTEX    : h324Initialize: Creating global mutex
+ffffffff : Mon Mar 13 14:05:17.013 : MUTEX    : h324Initialize: Creating global MSPP mutex
+ffffffff : Mon Mar 13 14:05:17.016 : H245     : H324M Timer. Started...
+ffffffff : Mon Mar 13 14:05:17.220 : H245     : H324M Timer. h324TimerPort = 3500.

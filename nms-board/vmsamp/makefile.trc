@@ -1,0 +1,64 @@
+# Name:    makefile
+# Creates: vmsamp
+# Usage:   gmake -f makefile
+
+TARGET = vmsamp
+
+OBJS =      megasamp.o \
+	    vm_stat.o \
+	    adiEvent.o \
+	    srv_shutdown.o \
+	    srv_commands.o \
+	    srv_playrec.o \
+	    srv_util.o \
+	    srv_init.o \
+            command.o \
+            event.o \
+            h245Event.o \
+            init.o \
+            isdn.o \
+            nccEvent.o \
+            shutdown.o \
+            utils.o \
+            trcEvent.o
+
+CC          = g++ 
+DEFLIST     = -DUNIX_SVR4 -DUNIX -DSOLARIS -DUNIXMODE -DMULTITHREAD -DSOLARIS_SPARC -DMAKEOBJ -D_REENTRANT -DUSE_TRC
+IPATHS      = -I/opt/nms/include -I/usr/local/include/g++-3 -I/usr/local/sparc-sun-solaris2.8/include
+LPATHS      = -L/opt/nms/lib -L/usr/lib -L/usr/local/lib
+CFLAGS      = -g -w
+LIBS        = -lcta -lmspapi -lnccapi -ladiapi -lvceapi -lswiapi -lisdnapi -lposix4 -lpthread -lh245stack -lh324api -lh245api -l3gpformat -ltrcapi -lsocket -lnsl
+LFLAGS      = 
+
+DNA_DEFS=   -D _SOLARIS         -D BOOL_DECLARED        -D EXCLUDE_CMH261CODEC\
+			-D _CONSOLE         -D INCLUDE_GSMAMR       -D EXCLUDE_CMH263CODEC\
+			-D NDEBUG           -D PASN_NOPRINTON       -D EXCLUDE_CMMP4VIDCODEC\
+			-D HAVE_STRING_H    -D PMEMORY_CHECK=0      -D EXCLUDE_CMG711CODEC\
+			-D INCLUDE_3G324M   -D PASN_LEANANDMEAN     -D EXCLUDE_CMG7231CODEC\
+			-D INCLUDE_H263     -D MPL_NO_CMRESOURCES   -D EXCLUDE_CMGSMAMRCODEC\
+			-D INCLUDE_H261     -D INCLUDE_CONSOLE_IO   -D INCLUDE_COMPILE_WARNING\
+			-D INCLUDE_G7231    -D INCLUDE_MPEG4VIDEO   -D _USE_H245_ASN_VERSION=6\
+			-D INCLUDE_G711     -D _H245_IN_MAIN_THREAD
+            
+   
+%.o : %.cpp command.h init.h mega_global.h gw_types.h srv_def.h srv_types.h
+	$(CC) -c $(CFLAGS) $(DEFLIST) $(IPATHS) $(DNA_DEFS)  -o $@ $<
+
+
+$(TARGET) : $(OBJS)
+	$(CC) $(LFLAGS) $(CFLAGS) $(LPATHS) $(LIBS) $(OBJS) -o $(TARGET)
+
+debug : $(TARGET)
+	mv $(TARGET) ./debug
+
+.PHONY : clean tidy
+
+clean:
+	- rm *.o
+	- rm $(TARGET)
+
+tidy:
+	- rm *.o
+
+# DO NOT DELETE
+

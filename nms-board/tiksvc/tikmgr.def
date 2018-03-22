@@ -1,0 +1,17 @@
+#******************************************************************************
+#  File - tikmgr.def
+#
+#  Description -
+#     Link module definition file for TIK Service Manager(Unixware).
+#
+#
+# Copyright (c) 1997 NMS Communications Corporation. All rights reserved.
+#******************************************************************************
+
+# LIBRARY     tikmgr 
+# DESCRIPTION 'NMS Communications Corp TIK Service Manager(Unixware)'
+
+# EXPORTS
+#                              Service DLL Entry Function
+    tikInitializeManager
+#                              [eof]

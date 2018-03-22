@@ -1,0 +1,15 @@
+#******************************************************************************
+#  File - hccmgr.def
+#
+#  Description -
+#     Link module definition file for NCC demo Service Manager(Unix).
+#
+#
+# Copyright (c) 1997 - 2003 NMS Communications.  All rights reserved.
+#******************************************************************************
+
+
+# EXPORTS
+#                              Service DLL Entry Function
+        hccInitializeManager
+#                               [eof]

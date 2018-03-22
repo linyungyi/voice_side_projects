@@ -1,0 +1,14 @@
+#******************************************************************************
+#  File - evtmgr.udf
+#
+#  Description -
+#     Link module definition file for EVT Service Manager(Unixware).
+#******************************************************************************
+
+# LIBRARY     evtmgr 
+# DESCRIPTION 'Template Natural Access Service API DLL.'
+
+# EXPORTS
+#                               Service DLL Entry Function
+    evtInitializeManager
+#                              [eof]

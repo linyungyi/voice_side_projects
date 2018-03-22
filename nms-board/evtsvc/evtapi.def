@@ -1,0 +1,32 @@
+#******************************************************************************
+#  File - evtapi.def
+#
+#  Description -
+#     Link module definition file for EVT Service API(Unixware).
+#******************************************************************************
+
+# LIBRARY     evtapi 
+# DESCRIPTION 'Template Natural Access Service API DLL.'
+
+# EXPORTS
+#                              Service API function.
+    evtSetLogFile
+    evtAddEventAll
+    evtAddEventValue
+    evtAddEvent
+    evtRemoveEventAll
+    evtRemoveEventValue
+    evtRemoveEvent
+    evtLogStart
+    evtLogStop
+#                              Service SPI function.
+    evtSpiSetLogFile
+    evtSpiAddEventAll
+    evtSpiAddEventValue
+    evtSpiAddEvent
+    evtSpiRemoveEventAll
+    evtSpiRemoveEventValue
+    evtSpiRemoveEvent
+    evtSpiLogStart
+    evtSpiLogStop
+#                              [eof]
